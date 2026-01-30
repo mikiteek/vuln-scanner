@@ -7,3 +7,10 @@ services:
     restart: unless-stopped
     ports:
       - "27017:27017"
+
+  redis:
+    image: redis:7-alpine
+    container_name: scanner-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
