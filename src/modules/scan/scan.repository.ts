@@ -28,13 +28,24 @@ export class ScanRepository {
     }
   }
 
-  async updateScanToFailed(scanId: string): Promise<void> {
+  async updateStatus(scanId: string, status: ScanStatus): Promise<void> {
     try {
-      await this.scanModel.findByIdAndUpdate(scanId, {
-        status: ScanStatus.Failed,
-      });
+      const updated = await this.scanModel.findByIdAndUpdate(
+        scanId,
+        {
+          status: status,
+        },
+        {
+          new: true,
+          runValidators: true,
+        },
+      );
+
+      if (!updated) {
+        throw new Error(`Scan record with id=${scanId} not found`);
+      }
     } catch (error) {
-      this.logger.error(`Error on updating scanIdToFailed=${scanId}`);
+      this.logger.error(`Error on updating scanId=${scanId}, status=${status}`);
       this.logger.error(error);
       throw error;
     }
