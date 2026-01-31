@@ -33,6 +33,8 @@ export class ScanController {
     const { repoUrl } = dto;
     const result = await this.scanService.scan(repoUrl);
 
-    return plainToInstance(ScanViewDto, result);
+    return plainToInstance(ScanViewDto, result, {
+      excludeExtraneousValues: true,
+    });
   }
 }

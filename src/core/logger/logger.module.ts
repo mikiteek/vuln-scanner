@@ -23,6 +23,10 @@ import { LoggerConfig } from '../../config/logger/logger.config';
                 colorize: true,
               },
             },
+            autoLogging: false,
+            serializers: {
+              req: () => undefined,
+            },
           },
         };
       },
