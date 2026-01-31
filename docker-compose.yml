@@ -14,3 +14,17 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
+
+  trivy:
+    image: aquasec/trivy:0.50.2
+    container_name: scanner-trivy
+    restart: "no"
+    entrypoint: ["trivy"]
+    environment:
+      - TRIVY_CACHE_DIR=/var/lib/trivy
+      - TRIVY_NO_PROGRESS=true
+    volumes:
+      - trivy-cache:/var/lib/trivy
+
+volumes:
+  trivy-cache:
