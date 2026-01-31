@@ -3,7 +3,11 @@ import * as path from 'node:path';
 
 @Injectable()
 export class LocalPathHelper {
-  static getDefaultTmpDir(): string {
-    return path.resolve(__dirname, '../../../../scanner-tmp/');
+  static getDefaultBaseDir(): string {
+    return path.resolve(process.cwd(), 'tmp');
+  }
+
+  static getTargetPath(baseDir: string, fileName: string) {
+    return path.join(baseDir, fileName);
   }
 }

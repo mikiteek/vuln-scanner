@@ -18,7 +18,7 @@ export class TrivyHelper {
     localRepoPath: string,
   ): Promise<TrivyScanDirectoryResult> {
     const reportsDir = path.resolve(
-      LocalPathHelper.getDefaultTmpDir(),
+      LocalPathHelper.getDefaultBaseDir(),
       DEFAULT_REPORTS_DIRNAME,
     );
     await fs.mkdir(reportsDir, { recursive: true });

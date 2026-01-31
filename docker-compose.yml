@@ -17,7 +17,6 @@ services:
 
   trivy:
     image: aquasec/trivy:0.50.2
-    container_name: scanner-trivy
     restart: "no"
     entrypoint: ["trivy"]
     environment:

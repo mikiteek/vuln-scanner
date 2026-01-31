@@ -46,7 +46,11 @@ export class RemoteRepoHelper {
   async clone(repoUrl: string, options: CloneOptions = {}): Promise<string> {
     const repoName = `${this.validateUrl(repoUrl)}_${Date.now()}`;
     const targetDir =
-      options.targetDir ?? LocalPathHelper.getDefaultTmpDir() + repoName;
+      options.targetDir ??
+      LocalPathHelper.getTargetPath(
+        LocalPathHelper.getDefaultBaseDir(),
+        repoName,
+      );
 
     const shallow = options.shallow ?? true;
     const timeoutMs = options.timeoutMs ?? TIMEOUT_MINUTES * 60 * 1000;
@@ -182,6 +186,6 @@ export class RemoteRepoHelper {
       throw invalidRepoUrlErr;
     }
 
-    return parsedUrl.pathname;
+    return pathSegments.join('_');
   }
 }
