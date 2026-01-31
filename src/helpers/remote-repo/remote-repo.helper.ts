@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { LocalPathHelper } from '../local-path/local-path.helper';
 
 const execFileAsync = promisify(execFile);
 
@@ -47,7 +47,10 @@ export class RemoteRepoHelper {
     const repoName = `${this.validateUrl(repoUrl)}_${Date.now()}`;
     const targetDir =
       options.targetDir ??
-      path.resolve(__dirname, `../../../../scanner-tmp/${repoName}`);
+      LocalPathHelper.getTargetPath(
+        LocalPathHelper.getDefaultBaseDir(),
+        repoName,
+      );
 
     const shallow = options.shallow ?? true;
     const timeoutMs = options.timeoutMs ?? TIMEOUT_MINUTES * 60 * 1000;
@@ -183,6 +186,6 @@ export class RemoteRepoHelper {
       throw invalidRepoUrlErr;
     }
 
-    return parsedUrl.pathname;
+    return pathSegments.join('_');
   }
 }

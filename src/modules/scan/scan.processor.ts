@@ -9,6 +9,7 @@ import type { Job } from 'bull';
 import { ScanRepository } from './scan.repository';
 import { ScanStatus } from './types/scan';
 import { RemoteRepoHelper } from '../../helpers/remote-repo/remote-repo.helper';
+import { TrivyHelper } from '../../helpers/trivy/trivy.helper';
 
 type ScanJobOptions = {
   scanId: string;
@@ -23,6 +24,8 @@ export class ScanProcessor {
     private readonly scanRepository: ScanRepository,
 
     private readonly remoteRepoHelper: RemoteRepoHelper,
+
+    private readonly trivyHelper: TrivyHelper,
   ) {}
 
   @Process('scan-repo')
@@ -36,10 +39,16 @@ export class ScanProcessor {
       this.logger.debug('Updating scan status to Scanning...');
       await this.scanRepository.updateStatus(scanId, ScanStatus.Scanning);
 
+      this.logger.debug(`Cloning remote repo: ${repoUrl}`);
       const localRepoPath = await this.cloneRemoteRepo(repoUrl);
-      this.logger.debug(`Local repo path: ${localRepoPath}`);
 
-      // TODO scan repo generating report
+      this.logger.debug(`Generating trivy report, dir path: ${localRepoPath}`);
+      const reportPath = await this.generateTrivyReport(scanId, localRepoPath);
+
+      this.logger.debug(
+        `Parsing report and storing critical vulnerabilities, report path: ${reportPath}`,
+      );
+
       // TODO read report storing critical vulnerabilities
     } catch (error) {
       this.logger.error('Failed to handle scan repo');
@@ -60,6 +69,27 @@ export class ScanProcessor {
       return localRepoPath;
     } catch (error: unknown) {
       this.logger.error(`Failed to clone repository for repoUrl=${repoUrl}`);
+      this.logger.error(error);
+      throw error;
+    }
+  }
+
+  private async generateTrivyReport(scanId: string, localRepoPath: string) {
+    try {
+      this.logger.debug(
+        `Generating Trivy report for scanId=${scanId}, localRepoPath=${localRepoPath}`,
+      );
+
+      const { reportPath } = await this.trivyHelper.scanDirectory(
+        scanId,
+        localRepoPath,
+      );
+
+      this.logger.debug(`Trivy report generated: ${reportPath}`);
+
+      return reportPath;
+    } catch (error: unknown) {
+      this.logger.error(`Failed to generate Trivy report for scanId=${scanId}`);
       this.logger.error(error);
       throw error;
     }
