@@ -42,7 +42,7 @@ export class ScanService {
     } catch (error) {
       this.logger.warn('Failed to add scanJobToQueue');
 
-      await this.scanRepository.updateScanToFailed(scanId);
+      await this.scanRepository.updateStatus(scanId, ScanStatus.Failed);
       throw error;
     }
 

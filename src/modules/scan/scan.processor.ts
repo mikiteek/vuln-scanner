@@ -6,6 +6,8 @@ import {
 } from '@nestjs/bull';
 import { PinoLogger } from 'nestjs-pino';
 import type { Job } from 'bull';
+import { ScanRepository } from './scan.repository';
+import { ScanStatus } from './types/scan';
 
 type ScanJobOptions = {
   scanId: string;
@@ -14,7 +16,11 @@ type ScanJobOptions = {
 
 @Processor('scan')
 export class ScanProcessor {
-  constructor(private readonly logger: PinoLogger) {}
+  constructor(
+    private readonly logger: PinoLogger,
+
+    private readonly scanRepository: ScanRepository,
+  ) {}
 
   @Process('scan-repo')
   async handleScan(job: Job<ScanJobOptions>): Promise<void> {
@@ -22,6 +28,12 @@ export class ScanProcessor {
     this.logger.debug(
       `Scan processor handle scan started for scanId=${scanId}, repoUrl=${repoUrl}`,
     );
+
+    // update status to SCANNING
+    await this.scanRepository.updateStatus(scanId, ScanStatus.Scanning);
+
+    // clone repo implementation
+    
   }
 
   @OnQueueCompleted()
