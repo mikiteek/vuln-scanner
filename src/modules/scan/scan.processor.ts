@@ -1,4 +1,9 @@
-import { Processor, Process, OnQueueCompleted, OnQueueFailed } from '@nestjs/bull';
+import {
+  Processor,
+  Process,
+  OnQueueCompleted,
+  OnQueueFailed,
+} from '@nestjs/bull';
 import { PinoLogger } from 'nestjs-pino';
 import type { Job } from 'bull';
 
@@ -20,18 +25,22 @@ export class ScanProcessor {
 
   @OnQueueCompleted()
   onCompleted(job: Job<ScanJobOptions>): void {
+    const { id: jobId, data: { scanId, repoUrl } = {} } = job;
     this.logger.info('Job completed', {
-      scanId: job.data?.scanId,
-      jobId: job.id,
+      scanId,
+      repoUrl,
+      jobId,
     });
   }
 
   @OnQueueFailed()
-  onFailed(job: Job<ScanJobOptions>, err: Error): void {
+  onFailed(job: Job<ScanJobOptions>, error: Error): void {
+    const { id: jobId, data: { scanId, repoUrl } = {} } = job;
     this.logger.error('Job failed', {
-      scanId: job.data?.scanId,
-      jobId: job.id,
-      err: err.message,
+      scanId,
+      repoUrl,
+      jobId,
+      error,
     });
   }
 }
