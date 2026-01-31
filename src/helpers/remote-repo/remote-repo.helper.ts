@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { inspect } from 'node:util';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
@@ -45,10 +44,11 @@ type CloneOptions = {
 @Injectable()
 export class RemoteRepoHelper {
   async clone(repoUrl: string, options: CloneOptions = {}): Promise<string> {
-    const repoName = this.validateUrl(repoUrl);
+    const repoName = `${this.validateUrl(repoUrl)}_${Date.now()}`;
     const targetDir =
       options.targetDir ??
       path.resolve(__dirname, `../../../../scanner-tmp/${repoName}`);
+
     const shallow = options.shallow ?? true;
     const timeoutMs = options.timeoutMs ?? TIMEOUT_MINUTES * 60 * 1000;
 
@@ -73,17 +73,11 @@ export class RemoteRepoHelper {
 
       return targetDir;
     } catch (error: unknown) {
-      await fs.rm(targetDir, { recursive: true, force: true }).catch(() => {
-        // ignore
-      });
-
-      const message =
-        error instanceof Error
-          ? error.message
-          : typeof error === 'string'
-            ? error
-            : inspect(error, { depth: 2 });
-      throw new Error(message);
+      console.error('Error on cloning repo');
+      // await fs.rm(targetDir, { recursive: true, force: true }).catch(() => {
+      //
+      // });
+      throw error;
     }
   }
 
@@ -189,6 +183,6 @@ export class RemoteRepoHelper {
       throw invalidRepoUrlErr;
     }
 
-    return pathSegments.at(-1);
+    return parsedUrl.pathname;
   }
 }
