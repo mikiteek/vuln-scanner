@@ -8,8 +8,10 @@ import { PinoLogger } from 'nestjs-pino';
 import type { Job } from 'bull';
 import { ScanRepository } from './scan.repository';
 import { ScanStatus } from './types/scan';
+import type { TrivyVulnerability } from './types/trivy';
 import { RemoteRepoHelper } from '../../helpers/remote-repo/remote-repo.helper';
-import { TrivyHelper } from '../../helpers/trivy/trivy.helper';
+import { TrivyScanHelper } from '../../helpers/trivy/trivy.scan.helper';
+import { TrivyReadReportsHelper } from '../../helpers/trivy/trivy.read-reports.helper';
 
 type ScanJobOptions = {
   scanId: string;
@@ -25,7 +27,9 @@ export class ScanProcessor {
 
     private readonly remoteRepoHelper: RemoteRepoHelper,
 
-    private readonly trivyHelper: TrivyHelper,
+    private readonly trivyScanner: TrivyScanHelper,
+
+    private readonly trivyReader: TrivyReadReportsHelper,
   ) {}
 
   @Process('scan-repo')
@@ -48,8 +52,13 @@ export class ScanProcessor {
       this.logger.debug(
         `Parsing report and storing critical vulnerabilities, report path: ${reportPath}`,
       );
+      await this.readReport(scanId, reportPath);
 
-      // TODO read report storing critical vulnerabilities
+      this.logger.debug('Cleaning up tmp files');
+      // implement cleanup
+
+      this.logger.debug('Updating scan status to Finished...');
+      await this.scanRepository.updateStatus(scanId, ScanStatus.Finished);
     } catch (error) {
       this.logger.error('Failed to handle scan repo');
       this.logger.error(error);
@@ -80,7 +89,7 @@ export class ScanProcessor {
         `Generating Trivy report for scanId=${scanId}, localRepoPath=${localRepoPath}`,
       );
 
-      const { reportPath } = await this.trivyHelper.scanDirectory(
+      const { reportPath } = await this.trivyScanner.scanDirectory(
         scanId,
         localRepoPath,
       );
@@ -90,6 +99,26 @@ export class ScanProcessor {
       return reportPath;
     } catch (error: unknown) {
       this.logger.error(`Failed to generate Trivy report for scanId=${scanId}`);
+      this.logger.error(error);
+      throw error;
+    }
+  }
+
+  private async readReport(scanId: string, reportPath: string): Promise<void> {
+    try {
+      const criticalVulnerabilities: TrivyVulnerability[] =
+        await this.trivyReader.readCriticalVulnerabilities(reportPath);
+
+      this.logger.debug(
+        `Parsed report and found critical vulnerabilities: ${criticalVulnerabilities.length}`,
+      );
+
+      await this.scanRepository.storeCriticalVulnerabilities(
+        scanId,
+        criticalVulnerabilities,
+      );
+    } catch (error: unknown) {
+      this.logger.error(`Failed to read report for scanId=${scanId}`);
       this.logger.error(error);
       throw error;
     }
