@@ -1,14 +1,17 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
+import { MongooseModule } from '@nestjs/mongoose';
 import { ScanController } from './scan.controller';
 import { ScanService } from './scan.service';
 import { ScanProcessor } from './scan.processor';
+import { SCAN_MODEL_NAME, ScanSchema } from './scan.schema';
 
 @Module({
   imports: [
     BullModule.registerQueue({
       name: 'scan',
     }),
+    MongooseModule.forFeature([{ name: SCAN_MODEL_NAME, schema: ScanSchema }]),
   ],
   controllers: [ScanController],
   providers: [ScanService, ScanProcessor],

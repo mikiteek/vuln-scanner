@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Type, Expose } from 'class-transformer';
 import { ScanStatus } from '../types/scan';
 import { TrivyVulnerability } from './trivy.vulnerability.view.dto';
 
@@ -8,6 +8,7 @@ export class ScanViewDto {
     type: 'string',
     description: 'Scan ID',
   })
+  @Expose()
   id: string;
 
   @ApiProperty({
@@ -15,12 +16,21 @@ export class ScanViewDto {
     enum: Object.values(ScanStatus),
     description: 'Scan status',
   })
+  @Expose()
   status: ScanStatus;
+
+  @ApiProperty({
+    type: 'string',
+    description: 'Repository url',
+  })
+  @Expose()
+  repoUrl: string;
 
   @ApiProperty({
     type: [TrivyVulnerability],
     description: 'Critical vulnerabilities found during scan',
   })
+  @Expose()
   @Type(() => TrivyVulnerability)
   criticalVulnerabilities: TrivyVulnerability[];
 }
