@@ -45,7 +45,7 @@ export class ScanRepository {
         throw new Error(`Scan record with id=${scanId} not found`);
       }
     } catch (error) {
-      this.logger.error(`Error on updating scanIdToFailed=${scanId}`);
+      this.logger.error(`Error on updating scanId=${scanId}, status=${status}`);
       this.logger.error(error);
       throw error;
     }
