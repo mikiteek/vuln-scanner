@@ -31,7 +31,7 @@ export class ScanController {
   @Post('/')
   async scan(@Body() dto: ScanFormDto): Promise<ScanViewDto> {
     const { repoUrl } = dto;
-    const result = await this.scanService.scan(repoUrl);
+    const result = await this.scanService.scan(repoUrl.trim());
 
     return plainToInstance(ScanViewDto, result, {
       excludeExtraneousValues: true,

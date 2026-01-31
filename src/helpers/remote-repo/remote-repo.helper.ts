@@ -20,10 +20,12 @@ type SimpleGitFactory = (options: {
   timeout: { block: number };
 }) => SimpleGitLike;
 
+const TIMEOUT_MINUTES = 2;
+
 type CloneOptions = {
   /**
    * If provided, cloned repo is placed into this directory.
-   * Otherwise, a unique temp directory is created.
+   * Otherwise, a dedicated temp directory is created.
    */
   targetDir?: string;
 
@@ -35,7 +37,7 @@ type CloneOptions = {
 
   /**
    * Git clone timeout in milliseconds.
-   * Defaults to 5 minutes.
+   * Defaults to 2 minute.
    */
   timeoutMs?: number;
 };
@@ -43,23 +45,18 @@ type CloneOptions = {
 @Injectable()
 export class RemoteRepoHelper {
   async clone(repoUrl: string, options: CloneOptions = {}): Promise<string> {
-    const normalizedRepoUrl = repoUrl.trim();
-    if (!normalizedRepoUrl.startsWith('https://github.com')) {
-      throw new Error('Invalid repoUrl');
-    }
-
-    const repoName = normalizedRepoUrl.split('/').at(-1);
+    const repoName = this.validateUrl(repoUrl);
     const targetDir =
       options.targetDir ??
       path.resolve(__dirname, `../../../../scanner-tmp/${repoName}`);
     const shallow = options.shallow ?? true;
-    const timeoutMs = options.timeoutMs ?? 60 * 1000; // 1 min
+    const timeoutMs = options.timeoutMs ?? TIMEOUT_MINUTES * 60 * 1000;
 
     try {
-      // Prefer using an npm library (simple-git) if it is installed.
+      // Prefer using a npm library (simple-git) if it is installed.
       // simple-git uses child processes under the hood.
       const usedLibrary = await this.tryCloneWithSimpleGit({
-        repoUrl: normalizedRepoUrl,
+        repoUrl,
         targetDir,
         shallow,
         timeoutMs,
@@ -67,7 +64,7 @@ export class RemoteRepoHelper {
 
       if (!usedLibrary) {
         await this.cloneWithGitBinary({
-          repoUrl: normalizedRepoUrl,
+          repoUrl,
           targetDir,
           shallow,
           timeoutMs,
@@ -167,5 +164,31 @@ export class RemoteRepoHelper {
         GIT_TERMINAL_PROMPT: '0',
       },
     });
+  }
+
+  private validateUrl(repoUrl: string) {
+    let parsedUrl: URL;
+    const invalidRepoUrlErr = new Error(`Invalid repo url=${repoUrl}`);
+    try {
+      parsedUrl = new URL(repoUrl);
+    } catch {
+      throw invalidRepoUrlErr;
+    }
+
+    if (
+      parsedUrl.protocol !== 'https:' ||
+      parsedUrl.hostname !== 'github.com'
+    ) {
+      throw invalidRepoUrlErr;
+    }
+
+    const pathSegments = parsedUrl.pathname
+      .replace(/^\/+|\/+$/g, '')
+      .split('/');
+    if (pathSegments.length < 2 || !pathSegments[0] || !pathSegments[1]) {
+      throw invalidRepoUrlErr;
+    }
+
+    return pathSegments.at(-1);
   }
 }
