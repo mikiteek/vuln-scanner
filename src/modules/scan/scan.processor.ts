@@ -19,14 +19,15 @@ export class ScanProcessor {
   @Process('scan-repo')
   async handleScan(job: Job<ScanJobOptions>): Promise<void> {
     const { scanId, repoUrl } = job.data;
-
-    this.logger.info({ scanId, repoUrl });
+    this.logger.debug(
+      `Scan processor handle scan started for scanId=${scanId}, repoUrl=${repoUrl}`,
+    );
   }
 
   @OnQueueCompleted()
   onCompleted(job: Job<ScanJobOptions>): void {
     const { id: jobId, data: { scanId, repoUrl } = {} } = job;
-    this.logger.info('Job completed', {
+    this.logger.debug('Job completed', {
       scanId,
       repoUrl,
       jobId,
