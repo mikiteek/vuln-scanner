@@ -9,12 +9,10 @@ import { RedisConfig } from '../../config/redis/redis.config';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const redisConfig = configService.get<RedisConfig>('logger');
+        const redisConfig = configService.get<RedisConfig>('redis');
         if (!redisConfig) {
           throw new Error('Missing redis config');
         }
-
-        console.log(' rfedsi config - ', redisConfig);
 
         return {
           redis: redisConfig,
