@@ -79,4 +79,14 @@ export class ScanRepository {
       throw error;
     }
   }
+
+  async fetchScan(scanId: string): Promise<ScanDocument | null> {
+    try {
+      return await this.scanModel.findById(scanId);
+    } catch (error) {
+      this.logger.error(`Error on fetching scan for scanId=${scanId}`);
+      this.logger.error(error);
+      throw error;
+    }
+  }
 }
