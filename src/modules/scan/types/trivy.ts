@@ -75,7 +75,7 @@ export type TrivyVulnerability = {
   };
   Title?: string;
   Description?: string;
-  Severity?: TrivySeverity;
+  Severity?: TrivySeverityType;
   CweIDs?: string[];
   VendorSeverity?: Record<string, number>;
   CVSS?: Record<string, TrivyCvssScore>;
@@ -84,7 +84,13 @@ export type TrivyVulnerability = {
   LastModifiedDate?: string;
 };
 
-export type TrivySeverity = 'UNKNOWN' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export enum TrivySeverityType {
+  UNKNOWN = 'UNKNOWN',
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  CRITICAL = 'CRITICAL',
+}
 
 export type TrivyCvssScore = {
   V3Vector?: string;
@@ -98,7 +104,7 @@ export type TrivyMisconfiguration = {
   Description?: string;
   Message?: string;
   Resolution?: string;
-  Severity?: TrivySeverity;
+  Severity?: TrivySeverityType;
   PrimaryURL?: string;
   References?: string[];
   Status?: string;
@@ -117,7 +123,7 @@ export type TrivyMisconfiguration = {
 export type TrivySecretFinding = {
   RuleID?: string;
   Category?: string;
-  Severity?: TrivySeverity;
+  Severity?: TrivySeverityType;
   Title?: string;
   Match?: string;
   StartLine?: number;
@@ -131,6 +137,6 @@ export type TrivyLicenseFinding = {
   PkgName?: string;
   FilePath?: string;
   Name?: string;
-  Severity?: TrivySeverity;
+  Severity?: TrivySeverityType;
   Category?: string;
 };

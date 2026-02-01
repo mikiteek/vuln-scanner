@@ -12,7 +12,7 @@ const DEFAULT_REPORTS_DIRNAME = 'scanner-reports';
 const MAX_CAPTURED_BYTES = 64 * 1024;
 
 @Injectable()
-export class TrivyHelper {
+export class TrivyScanHelper {
   async scanDirectory(
     scanId: string,
     localRepoPath: string,
