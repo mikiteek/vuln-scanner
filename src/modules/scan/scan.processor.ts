@@ -159,7 +159,7 @@ export class ScanProcessor {
   @OnQueueCompleted()
   onCompleted(job: Job<ScanJobOptions>): void {
     const { id: jobId, data: { scanId, repoUrl } = {} } = job;
-    this.logger.debug(
+    this.logger.info(
       `Job completed, scanId=${scanId}, repoUrl=${repoUrl}, jobId=${jobId}`,
     );
   }

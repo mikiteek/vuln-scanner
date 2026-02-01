@@ -31,12 +31,9 @@ export class ScanService {
   }
 
   async scan(repoUrl: string): Promise<ScanResponse> {
-    this.logger.debug(`Scan repoUrl: ${repoUrl}`);
-
     const scanDoc = await this.scanRepository.storeQueuedScan(repoUrl);
     const scanId = scanDoc.id;
 
-    this.logger.debug(`Scan id=${scanId}`);
     try {
       await this.addScanJobToQueue(scanId, repoUrl);
     } catch (error) {
