@@ -1,98 +1,179 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Vulnerability Scanner API (GitHub repo → Trivy report)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS service that:
+- clones GitHub repository
+- scans it with Trivy
+- parses generated Trivy report
+- stores **critical** vulnerabilities.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+High-level behavior:
 
-## Description
+1. `POST /api/scan` enqueues a scan job and returns a `scanId`.
+2. A Bull worker clones the repo (child process), runs Trivy (child process), parses the JSON report, and stores results in MongoDB.
+3. `GET /api/scan/:scanId` returns the current status + critical vulnerabilities (when finished).
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Requirements
 
-## Project setup
+- Node.js (18+ recommended)
+- Docker + Docker Compose (plugin: `docker compose`)
+- `git` installed (used to clone repositories)
 
-```bash
-$ npm install
-```
+## Docker-compose dependencies
 
-## Compile and run the project
+This project uses `docker-compose.yml` for:
 
-```bash
-# development
-$ npm run start
+- **MongoDB** (scan persistence)
+- **Redis** (Bull queue backend)
+- **Trivy** image (invoked on-demand via `docker compose run ... trivy`)
 
-# watch mode
-$ npm run start:dev
+Important: Trivy is not a long-running service here; the app runs Trivy as a one-off container per scan.
 
-# production mode
-$ npm run start:prod
-```
+## Quickstart (local dev)
 
-## Run tests
+### 1) Start dependencies
 
 ```bash
-# unit tests
-$ npm run test
+docker compose up -d mongodb redis
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# optional (pull Trivy image ahead of time)
+docker compose pull trivy
 ```
 
-## Deployment
+### 2) Configure environment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Create a `.env` in the project root:
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# required
+DB_URI=mongodb://localhost:27017/scanner
+
+# optional (defaults shown)
+APP_PORT=3000
+LOG_LEVEL=info
+REDIS_HOST=localhost
+REDIS_PORT=6379
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Notes:
 
-## Resources
+- If you run the Nest app on your host (recommended for dev), use `localhost` in `DB_URI`/`REDIS_HOST`.
+- If you later containerize the Nest app, `DB_URI`/`REDIS_HOST` must use compose service names (`mongodb`, `redis`).
 
-Check out a few resources that may come in handy when working with NestJS:
+### 3) Install and run
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```bash
+npm install
+npm run start:dev
+```
 
-## Support
+Server defaults to `http://localhost:3000`.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## API
 
-## Stay in touch
+Base URL: `http://localhost:${APP_PORT:-3000}`
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### `POST /api/scan/`
 
-## License
+Enqueue a scan for a repository.
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Request body:
+
+```json
+{
+	"repoUrl": "https://github.com/mikiteek/NodeGoat"
+}
+```
+
+Response: `202 Accepted`
+
+```json
+{
+	"id": "65b2c4f3a1c2d3e4f5678901",
+	"status": "Queued",
+	"repoUrl": "https://github.com/mikiteek/NodeGoat",
+	"criticalVulnerabilities": []
+}
+```
+
+Validation:
+
+- `repoUrl` must be a string with length 10..300.
+- The scanner only supports `https://github.com/<owner>/<repo>` URLs (validated during cloning).
+
+### `GET /api/scan/:scanId`
+
+Fetch current scan status and results.
+
+Response: `200 OK`
+
+```json
+{
+	"id": "65b2c4f3a1c2d3e4f5678901",
+	"status": "Scanning",
+	"repoUrl": "https://github.com/mikiteek/NodeGoat",
+	"criticalVulnerabilities": []
+}
+```
+
+If the scan exists and has finished successfully, `status` is `Finished` and `criticalVulnerabilities` contains Trivy vulnerability objects.
+
+If the scan does not exist: `404 Not Found`.
+
+### Error format
+
+Errors are returned as JSON (via a global exception filter), for example:
+
+```json
+{
+	"statusCode": 400,
+	"timestamp": "2026-02-01T12:00:00.000Z",
+	"error": "Bad Request Exception",
+	"path": "/api/scan",
+	"messages": ["repoUrl must be longer than or equal to 10 characters"]
+}
+```
+
+## Architecture
+
+Core components:
+
+- **HTTP API**: `ScanController` exposes endpoints under `/api/scan`.
+- **Service layer**: `ScanService` creates a scan record and enqueues a Bull job.
+- **Queue**: Bull queue `scan` (Redis-backed) processes jobs asynchronously.
+- **Worker**: `ScanProcessor` handles `scan-repo` jobs.
+- **Persistence**: MongoDB collection `scans` stores `repoUrl`, `status`, and `criticalVulnerabilities`.
+
+Scan pipeline (happy path):
+
+1. Store scan document with status `Queued`
+2. Enqueue Bull job `{ scanId, repoUrl }`
+3. Worker updates status to `Scanning`
+4. Clone repo into `./tmp/<repo>_<timestamp>/`
+5. Run Trivy `fs` scan via `docker compose run trivy ...` and write JSON report into `./tmp/scanner-reports/report_<scanId>.json`
+6. Stream-parse the report and keep only vulnerabilities with `Severity=CRITICAL`
+7. Store critical vulnerabilities in MongoDB
+8. Update status to `Finished`
+9. Cleanup cloned repo + report file
+
+Statuses:
+
+- `Queued` → `Scanning` → `Finished`
+- Any error in cloning/scanning/parsing results in `Failed`
+
+## Operational notes / limitations
+
+- Repos: only `https://github.com/...` is supported by the clone helper.
+- Private repos: authentication is not implemented (no token/SSH flow); scans will fail if the repo cannot be cloned anonymously.
+- Trivy: requires the Docker daemon to be running and accessible to the Node process.
+- Output: only **critical** vulnerabilities are stored/returned.
+
+## Useful scripts
+
+```bash
+npm run start:dev     # watch mode
+npm run build         # build to dist/
+npm run start:prod    # run dist/main
+npm run lint
+npm run test
+npm run test:e2e
+```
