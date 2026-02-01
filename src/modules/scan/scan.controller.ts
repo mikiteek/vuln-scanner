@@ -6,11 +6,15 @@ import {
   ValidationPipe,
   HttpCode,
   HttpStatus,
+  Param,
+  Get,
+  NotFoundException,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
 } from '@nestjs/swagger';
 import { ScanFormDto, ScanViewDto } from './dto';
@@ -34,6 +38,23 @@ export class ScanController {
     const result = await this.scanService.scan(repoUrl.trim());
 
     return plainToInstance(ScanViewDto, result, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @ApiNotFoundResponse({ description: 'Scan with the id does not exist' })
+  @ApiOkResponse({
+    type: ScanViewDto,
+  })
+  @Get('/:scanId')
+  async fetchScan(@Param('scanId') scanId: string): Promise<ScanViewDto> {
+    const scan = await this.scanService.fetchScan(scanId);
+    if (!scan) {
+      throw new NotFoundException();
+    }
+
+    return plainToInstance(ScanViewDto, scan, {
       excludeExtraneousValues: true,
     });
   }

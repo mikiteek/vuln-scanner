@@ -53,4 +53,20 @@ export class ScanService {
       criticalVulnerabilities: [],
     };
   }
+
+  async fetchScan(scanId: string): Promise<ScanResponse | null> {
+    const scanDoc = await this.scanRepository.fetchScan(scanId);
+    if (!scanDoc) {
+      return null;
+    }
+
+    const { status, repoUrl, criticalVulnerabilities } = scanDoc.toObject();
+
+    return {
+      id: scanId,
+      status,
+      repoUrl,
+      criticalVulnerabilities,
+    };
+  }
 }
