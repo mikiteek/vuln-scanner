@@ -9,6 +9,7 @@ import { SCAN_MODEL_NAME, ScanSchema } from './scan.schema';
 import { RemoteRepoHelper } from '../../helpers/remote-repo/remote-repo.helper';
 import { TrivyScanHelper } from '../../helpers/trivy/trivy.scan.helper';
 import { TrivyReadReportsHelper } from '../../helpers/trivy/trivy.read-reports.helper';
+import { CleanupHelper } from '../../helpers/cleanup/cleanup.helper';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { TrivyReadReportsHelper } from '../../helpers/trivy/trivy.read-reports.h
     RemoteRepoHelper,
     TrivyScanHelper,
     TrivyReadReportsHelper,
+    CleanupHelper,
   ],
 })
 export class ScanModule {}

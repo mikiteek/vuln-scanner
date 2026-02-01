@@ -12,6 +12,8 @@ import type { TrivyVulnerability } from './types/trivy';
 import { RemoteRepoHelper } from '../../helpers/remote-repo/remote-repo.helper';
 import { TrivyScanHelper } from '../../helpers/trivy/trivy.scan.helper';
 import { TrivyReadReportsHelper } from '../../helpers/trivy/trivy.read-reports.helper';
+import { LocalPathHelper } from '../../helpers/local-path/local-path.helper';
+import { CleanupHelper } from '../../helpers/cleanup/cleanup.helper';
 
 type ScanJobOptions = {
   scanId: string;
@@ -30,6 +32,8 @@ export class ScanProcessor {
     private readonly trivyScanner: TrivyScanHelper,
 
     private readonly trivyReader: TrivyReadReportsHelper,
+
+    private readonly cleanupHelper: CleanupHelper,
   ) {}
 
   @Process('scan-repo')
@@ -55,7 +59,7 @@ export class ScanProcessor {
       await this.readReport(scanId, reportPath);
 
       this.logger.debug('Cleaning up tmp files');
-      // implement cleanup
+      await this.cleanupDir(LocalPathHelper.getDefaultBaseDir());
 
       this.logger.debug('Updating scan status to Finished...');
       await this.scanRepository.updateStatus(scanId, ScanStatus.Finished);
@@ -124,24 +128,32 @@ export class ScanProcessor {
     }
   }
 
+  private async cleanupDir(targetDir: string): Promise<void> {
+    try {
+      await this.cleanupHelper.cleanupDir(targetDir);
+
+      this.logger.debug(`Cleanup completed for targetDir=${targetDir}`);
+    } catch (error: unknown) {
+      this.logger.error(`Failed to cleanup targetDir=${targetDir}`);
+      this.logger.error(error);
+      throw error;
+    }
+  }
+
   @OnQueueCompleted()
   onCompleted(job: Job<ScanJobOptions>): void {
     const { id: jobId, data: { scanId, repoUrl } = {} } = job;
-    this.logger.debug('Job completed', {
-      scanId,
-      repoUrl,
-      jobId,
-    });
+    this.logger.debug(
+      `Job completed, scanId=${scanId}, repoUrl=${repoUrl}, jobId=${jobId}`,
+    );
   }
 
   @OnQueueFailed()
   onFailed(job: Job<ScanJobOptions>, error: Error): void {
     const { id: jobId, data: { scanId, repoUrl } = {} } = job;
-    this.logger.error('Job failed', {
-      scanId,
-      repoUrl,
-      jobId,
-      error,
-    });
+    this.logger.error(
+      `Job failed, scanId=${scanId}, repoUrl=${repoUrl}, jobId=${jobId}`,
+    );
+    this.logger.error(error);
   }
 }
