@@ -43,10 +43,9 @@ export class ScanController {
   }
 
   @HttpCode(HttpStatus.OK)
-  @ApiNotFoundResponse({ description: 'Bad request' })
+  @ApiNotFoundResponse({ description: 'Scan with the id does not exist' })
   @ApiOkResponse({
     type: ScanViewDto,
-    description: 'Scan initiated successfully',
   })
   @Get('/:scanId')
   async fetchScan(@Param('scanId') scanId: string): Promise<ScanViewDto> {
