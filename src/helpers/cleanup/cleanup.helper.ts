@@ -10,7 +10,7 @@ export class CleanupHelper {
       return;
     }
 
-    const resolvedTargetDir = this.validateDirPath(targetDir);
+    const resolvedTargetDir = this.validateProjectDir(targetDir);
 
     await fs.rm(resolvedTargetDir, { recursive: true, force: true });
   }
@@ -21,12 +21,13 @@ export class CleanupHelper {
       return;
     }
 
+    this.validateProjectDir(filePath);
     const resolvedTargetPath = await this.validateFilePath(filePath);
 
     await fs.rm(resolvedTargetPath, { force: true });
   }
 
-  private validateDirPath(targetDir: string): string {
+  private validateProjectDir(targetDir: string): string {
     const resolvedTargetDir = path.resolve(targetDir);
     const resolvedCwd = path.resolve(process.cwd());
 
