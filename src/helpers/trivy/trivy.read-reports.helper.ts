@@ -17,8 +17,7 @@ export class TrivyReadReportsHelper {
 
     const reportStream = createReadStream(reportPath, {
       encoding: 'utf8',
-      // 1MB chunks keeps throughput decent while staying memory-friendly.
-      highWaterMark: 1024 * 1024,
+      highWaterMark: 1024 * 1024, // 1mb chunk
     });
 
     const resultsStream = reportStream
@@ -55,6 +54,7 @@ export class TrivyReadReportsHelper {
       return critical;
     } catch (error) {
       reportStream.destroy();
+      resultsStream.destroy();
       throw error;
     }
   }
