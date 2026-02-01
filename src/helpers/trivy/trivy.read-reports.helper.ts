@@ -44,7 +44,7 @@ export class TrivyReadReportsHelper {
         for (const vulnerability of vulnerabilities) {
           if (
             this.isTrivyVulnerability(vulnerability) &&
-            vulnerability?.Severity === TrivySeverityType.CRITICAL
+            vulnerability.Severity === TrivySeverityType.CRITICAL
           ) {
             critical.push(vulnerability);
           }
@@ -59,12 +59,10 @@ export class TrivyReadReportsHelper {
     }
   }
 
-  // just method helper for type casting
   private isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null;
   }
 
-  // just method helper for type casting
   private isTrivySeverity(
     value: unknown,
   ): value is TrivyVulnerability['Severity'] {
@@ -77,7 +75,6 @@ export class TrivyReadReportsHelper {
     );
   }
 
-  // just method helper for type casting
   private isTrivyVulnerability(value: unknown): value is TrivyVulnerability {
     if (!this.isRecord(value)) {
       return false;

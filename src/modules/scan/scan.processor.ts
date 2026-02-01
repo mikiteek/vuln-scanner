@@ -12,7 +12,6 @@ import type { TrivyVulnerability } from './types/trivy';
 import { RemoteRepoHelper } from '../../helpers/remote-repo/remote-repo.helper';
 import { TrivyScanHelper } from '../../helpers/trivy/trivy.scan.helper';
 import { TrivyReadReportsHelper } from '../../helpers/trivy/trivy.read-reports.helper';
-import { LocalPathHelper } from '../../helpers/local-path/local-path.helper';
 import { CleanupHelper } from '../../helpers/cleanup/cleanup.helper';
 
 type ScanJobOptions = {
@@ -43,23 +42,23 @@ export class ScanProcessor {
       `Scan processor handle scan started for scanId=${scanId}, repoUrl=${repoUrl}`,
     );
 
+    let localRepoPath: string = '';
+    let reportPath: string = '';
+
     try {
       this.logger.debug('Updating scan status to Scanning...');
       await this.scanRepository.updateStatus(scanId, ScanStatus.Scanning);
 
       this.logger.debug(`Cloning remote repo: ${repoUrl}`);
-      const localRepoPath = await this.cloneRemoteRepo(repoUrl);
+      localRepoPath = await this.cloneRemoteRepo(repoUrl);
 
       this.logger.debug(`Generating trivy report, dir path: ${localRepoPath}`);
-      const reportPath = await this.generateTrivyReport(scanId, localRepoPath);
+      reportPath = await this.generateTrivyReport(scanId, localRepoPath);
 
       this.logger.debug(
         `Parsing report and storing critical vulnerabilities, report path: ${reportPath}`,
       );
       await this.readReport(scanId, reportPath);
-
-      this.logger.debug('Cleaning up tmp files');
-      await this.cleanupDir(LocalPathHelper.getDefaultBaseDir());
 
       this.logger.debug('Updating scan status to Finished...');
       await this.scanRepository.updateStatus(scanId, ScanStatus.Finished);
@@ -69,6 +68,11 @@ export class ScanProcessor {
       await this.scanRepository.updateStatus(scanId, ScanStatus.Failed);
 
       throw error;
+    } finally {
+      this.logger.debug('Cleaning up repo files');
+      await this.cleanupRepo(localRepoPath);
+      this.logger.debug('Cleaning up report files');
+      await this.cleanupReport(reportPath);
     }
   }
 
@@ -128,13 +132,25 @@ export class ScanProcessor {
     }
   }
 
-  private async cleanupDir(targetDir: string): Promise<void> {
+  private async cleanupRepo(localRepoPath: string): Promise<void> {
     try {
-      await this.cleanupHelper.cleanupDir(targetDir);
+      await this.cleanupHelper.cleanupDir(localRepoPath);
 
-      this.logger.debug(`Cleanup completed for targetDir=${targetDir}`);
+      this.logger.debug(`Cleanup completed for localRepoPath=${localRepoPath}`);
     } catch (error: unknown) {
-      this.logger.error(`Failed to cleanup targetDir=${targetDir}`);
+      this.logger.error(`Failed to cleanup localRepoPath=${localRepoPath}`);
+      this.logger.error(error);
+      throw error;
+    }
+  }
+
+  private async cleanupReport(reportPath: string): Promise<void> {
+    try {
+      await this.cleanupHelper.cleanupFile(reportPath);
+
+      this.logger.debug(`Cleanup completed for reportPath=${reportPath}`);
+    } catch (error: unknown) {
+      this.logger.error(`Failed to cleanup reportPath=${reportPath}`);
       this.logger.error(error);
       throw error;
     }
