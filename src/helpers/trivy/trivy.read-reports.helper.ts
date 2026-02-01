@@ -17,7 +17,7 @@ export class TrivyReadReportsHelper {
 
     const reportStream = createReadStream(reportPath, {
       encoding: 'utf8',
-      highWaterMark: 1024 * 1024, // 1mb chunk
+      highWaterMark: 128 * 1024, // 128kb chunk
     });
 
     const resultsStream = reportStream
